@@ -6,6 +6,7 @@ teleporters = {}
 
 --Configuration
 local PLAYER_COOLDOWN = 1
+local going_up_effect = true
 -- end config
 
 teleporters.copy_pos = function (_pos)
@@ -30,17 +31,20 @@ end
 
 teleporters.find_safe = function (_pos)
 	pos = teleporters.copy_pos(_pos)
-	pos.x = pos.x +1 if teleporters.is_safe(pos) then return pos end
-	
-	pos = teleporters.copy_pos(_pos)
-	pos.x = pos.x -1 if teleporters.is_safe(pos) then return pos end
-	
-	pos = teleporters.copy_pos(_pos)
-	pos.z = pos.z +1 if teleporters.is_safe(pos) then return pos end
-	
-	pos = teleporters.copy_pos(_pos)
-	pos.z = pos.z -1 if teleporters.is_safe(pos) then return pos end
-	
+
+	pos.x = pos.x +1
+	if teleporters.is_safe(pos) then return pos end
+
+	pos.x = pos.x -2
+	if teleporters.is_safe(pos) then return pos end
+
+	pos.x = pos.x +1
+	pos.z = pos.z +1
+	if teleporters.is_safe(pos) then return pos end
+
+	pos.z = pos.z -2
+	if teleporters.is_safe(pos) then return pos end
+
 	return _pos
 end
 
@@ -170,13 +174,18 @@ teleporters.use_teleporter = function(obj,pos)
 		meta:set_string("target",minetest.pos_to_string(target)) -- convert to new behavior
 		meta:set_string("formspec", teleporters.make_formspec(meta))
 	end
-	
+
 	local newpos = teleporters.find_safe(teleporters.copy_pos(target))
 	if obj:is_player() then
 		minetest.sound_play("teleporters_teleport",{gain=1,to_player=obj:get_player_name()})
 	end
 	newpos.y = newpos.y + .5
-	teleporters.teleport({obj=obj,target=newpos}) -- TODO: particles and change player yaw
+	if going_up_effect then
+		newpos.y = newpos.y-1
+		teleporters.teleport({obj=obj,target=newpos})
+		newpos.y = newpos.y+1
+	end
+	minetest.after(.1, teleporters.teleport, {obj=obj,target=newpos}) -- TODO: particles and change player yaw
 	if obj:is_player() then
 		minetest.after(PLAYER_COOLDOWN, teleporters.reset_cooldown, {playername=obj:get_player_name()})
 	end
