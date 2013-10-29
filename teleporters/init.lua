@@ -124,7 +124,9 @@ minetest.register_node("teleporters:teleporter", {
 		if teleporters.selected[name] ~= nil then
 			-- link teleporters
 			local target = teleporters.selected[name]
-			if target.x == pos.x and target.y == pos.y and target.z == pos.z then
+			if target.x == pos.x
+			and target.y == pos.y
+			and target.z == pos.z then
 				hacky_swap_node(pos, "teleporters:unlinked")
 			else
 				local target_name = minetest.get_node(target).name
@@ -142,6 +144,10 @@ minetest.register_node("teleporters:teleporter", {
 		else
 			hacky_swap_node(pos, "teleporters:unlinked")
 			teleporters.selected[name] = pos
+			local playername = placer:get_player_name()
+			if playername ~= nil then
+				minetest.chat_send_player(playername, '<teleporter> ('..pos.x..' | '..pos.y..' | '..pos.z..')')
+			end
 		end
 	end,
 	on_receive_fields = function(pos, formname, fields, sender)
@@ -191,21 +197,21 @@ teleporters.use_teleporter = function(obj,pos)
 	end
 end
 
--- ABM is kept for items and other objects
+-- ABM is kept for items and other objects (eg. ufos)
 minetest.register_abm({
 	nodenames = {"teleporters:teleporter"},
 	interval = 1,
 	chance = 1,
 	action = function(pos, node)
 		local meta = minetest.env:get_meta(pos)
-		if meta:get_string("target") ~= "" then
+		--[[if meta:get_string("target") ~= "" then
 			local target = minetest.string_to_pos(meta:get_string("target"))
 			local target_name = minetest.get_node(target).name
 			if target_name ~= "ignore" and target_name ~= "teleporters:teleporter" then -- target has been removed, unlink
 				meta:set_string("target","")
 				hacky_swap_node(pos,"teleporters:unlinked")
 			end
-		end
+		end]]
 		pos.y = pos.y+.5
 		local objs = minetest.env:get_objects_inside_radius(pos, .5)
 		pos.y = pos.y -.5
@@ -220,7 +226,7 @@ minetest.register_globalstep(function(dtime)
 	for i, player in ipairs(minetest.get_connected_players()) do
 		pos = player:getpos()
 		pos = {x=math.floor(pos.x+.5),y=math.floor(pos.y),z=math.floor(pos.z+.5)}
-		if minetest.env:get_node(pos).name == "teleporters:teleporter" then
+		if minetest.get_node(pos).name == "teleporters:teleporter" then
 			teleporters.use_teleporter(player,pos)
 		end
 	end
