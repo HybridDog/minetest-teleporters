@@ -175,8 +175,11 @@ teleporters.use_teleporter = function(obj,pos)
 	if meta:get_string("target") ~= "" then
 		target = minetest.string_to_pos(meta:get_string("target"))
 	elseif meta:get_int("id") > 0 then -- Compatibility with older versions
-		if meta:get_int("id") %2 == 0 then target = teleporters.network[meta:get_int("id")-1]
-		else target = teleporters.network[meta:get_int("id")+1] end
+		if meta:get_int("id") %2 == 0 then
+			target = teleporters.network[meta:get_int("id")-1]
+		else
+			target = teleporters.network[meta:get_int("id")+1]
+		end
 		meta:set_string("target",minetest.pos_to_string(target)) -- convert to new behavior
 		meta:set_string("formspec", teleporters.make_formspec(meta))
 	end
