@@ -4,12 +4,12 @@ teleporters.network = {}
 teleporters.file = minetest.get_worldpath()..'/teleporters'
 
 teleporters.load = function()
-	local f = io.open(teleporters.file, "r")  
+	local f = io.open(teleporters.file, "r")
 	if f then
 		local contents = f:read()
 		io.close(f)
-		if contents ~= nil then 
-			local entries = contents:split(";") 
+		if contents ~= nil then
+			local entries = contents:split(";")
 			for i,entry in pairs(entries) do
 				local id, coords = unpack(entry:split(":"))
 				local p = {}

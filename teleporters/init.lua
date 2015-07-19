@@ -9,45 +9,35 @@ local PLAYER_COOLDOWN = 1
 local going_up_effect = true
 -- end config
 
-teleporters.copy_pos = function (_pos)
+function teleporters.copy_pos(_pos)
 	return {x=_pos.x, y=_pos.y, z=_pos.z}
 end
 
-teleporters.is_safe = function (pos)
-	ok = false
-	if minetest.env:get_node(pos).name ~= "air" then
-		pos.y = pos.y +1
-		if minetest.env:get_node(pos).name == "air" then
-			pos.y = pos.y +1
-			if minetest.env:get_node(pos).name == "air" then
-				ok = true
-			end
-			pos.y = pos.y -1
-		end
-		pos.y = pos.y -1
+function teleporters.is_safe(pos)
+	if minetest.registered_nodes[minetest.get_node(pos).name].walkable
+	and not (
+		minetest.registered_nodes[minetest.get_node({x=pos.x, y=pos.y+1, z=pos.z}).name].walkable
+		or minetest.registered_nodes[minetest.get_node({x=pos.x, y=pos.y+2, z=pos.z}).name].walkable
+	) then
+		return true
 	end
-	return ok
+	return false
 end
 
-teleporters.find_safe = function (_pos)
-	pos = teleporters.copy_pos(_pos)
-
-	pos.x = pos.x +1
-	if teleporters.is_safe(pos) then return pos end
-
-	pos.x = pos.x -2
-	if teleporters.is_safe(pos) then return pos end
-
-	pos.x = pos.x +1
-	pos.z = pos.z +1
-	if teleporters.is_safe(pos) then return pos end
-
-	pos.z = pos.z -2
-	if teleporters.is_safe(pos) then return pos end
-
+function teleporters.find_safe(_pos)
+	for _,pos in pairs({
+		{x=_pos.x+1, z=_pos.z},
+		{x=_pos.x-1, z=_pos.z},
+		{x=_pos.x, z=_pos.z+1},
+		{x=_pos.x, z=_pos.z-1}
+	}) do
+		pos.y = _pos.y
+		if teleporters.is_safe(pos) then
+			return pos
+		end
+	end
 	return _pos
 end
-
 
 dofile(minetest.get_modpath("teleporters").."/legacy.lua")
 
@@ -60,7 +50,7 @@ end
 
 teleporters.teleport = function (params)
 	params.obj:setpos(params.target)
-	print(dump(params.target))
+	print("[teleporters] "..dump(params.target))
 end
 
 teleporters.reset_cooldown = function (params)
@@ -98,7 +88,7 @@ minetest.register_node("teleporters:unlinked", {
 	sounds = default.node_sound_stone_defaults(),
 	on_receive_fields = function(pos, formname, fields, sender)
 		if fields.desc then
-			local meta = minetest.env:get_meta(pos)
+			local meta = minetest.get_meta(pos)
 			meta:set_string("infotext",fields.desc)
 			meta:set_string("formspec",teleporters.make_formspec(meta))
 		end
@@ -152,7 +142,7 @@ minetest.register_node("teleporters:teleporter", {
 	end,
 	on_receive_fields = function(pos, formname, fields, sender)
 		if fields.desc then
-			local meta = minetest.env:get_meta(pos)
+			local meta = minetest.get_meta(pos)
 			meta:set_string("infotext",fields.desc)
 			meta:set_string("formspec",teleporters.make_formspec(meta))
 		end
@@ -170,7 +160,7 @@ teleporters.use_teleporter = function(obj,pos)
 		end
 		teleporters.is_teleporting[obj:get_player_name()] = true
 	end
-	local meta = minetest.env:get_meta(pos)
+	local meta = minetest.get_meta(pos)
 	local target = pos
 	if meta:get_string("target") ~= "" then
 		target = minetest.string_to_pos(meta:get_string("target"))
@@ -206,17 +196,18 @@ minetest.register_abm({
 	interval = 1,
 	chance = 1,
 	action = function(pos, node)
-		local meta = minetest.env:get_meta(pos)
+		local meta = minetest.get_meta(pos)
 		--[[if meta:get_string("target") ~= "" then
 			local target = minetest.string_to_pos(meta:get_string("target"))
 			local target_name = minetest.get_node(target).name
-			if target_name ~= "ignore" and target_name ~= "teleporters:teleporter" then -- target has been removed, unlink
+			if target_name ~= "ignore"
+			and target_name ~= "teleporters:teleporter" then -- target has been removed, unlink
 				meta:set_string("target","")
 				hacky_swap_node(pos,"teleporters:unlinked")
 			end
 		end]]
 		pos.y = pos.y+.5
-		local objs = minetest.env:get_objects_inside_radius(pos, .5)
+		local objs = minetest.get_objects_inside_radius(pos, .5)
 		pos.y = pos.y -.5
 		for _, obj in pairs(objs) do
 			teleporters.use_teleporter(obj,pos)
@@ -226,9 +217,8 @@ minetest.register_abm({
 
 -- globalstep for players
 minetest.register_globalstep(function(dtime)
-	for i, player in ipairs(minetest.get_connected_players()) do
-		pos = player:getpos()
-		pos = {x=math.floor(pos.x+.5),y=math.floor(pos.y),z=math.floor(pos.z+.5)}
+	for i, player in pairs(minetest.get_connected_players()) do
+		local pos = vector.round(player:getpos())
 		if minetest.get_node(pos).name == "teleporters:teleporter" then
 			teleporters.use_teleporter(player,pos)
 		end
