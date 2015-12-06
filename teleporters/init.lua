@@ -197,7 +197,8 @@ minetest.register_abm({
 	chance = 1,
 	action = function(pos, node)
 		local meta = minetest.get_meta(pos)
-		--[[if meta:get_string("target") ~= "" then
+		--[[
+		if meta:get_string("target") ~= "" then
 			local target = minetest.string_to_pos(meta:get_string("target"))
 			local target_name = minetest.get_node(target).name
 			if target_name ~= "ignore"
@@ -205,7 +206,7 @@ minetest.register_abm({
 				meta:set_string("target","")
 				hacky_swap_node(pos,"teleporters:unlinked")
 			end
-		end]]
+		end--]]
 		pos.y = pos.y+.5
 		local objs = minetest.get_objects_inside_radius(pos, .5)
 		pos.y = pos.y -.5
