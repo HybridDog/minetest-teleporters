@@ -25,6 +25,9 @@ function teleporters.is_safe(pos)
 end
 
 function teleporters.find_safe(_pos)
+	if not minetest.get_node_or_nil(_pos) then
+		minetest.get_voxel_manip():read_from_map({x=_pos.x-1, y=_pos.y, z=_pos.z-1}, {x=_pos.x+1, y=_pos.y, z=_pos.z+1})
+	end
 	for _,pos in pairs({
 		{x=_pos.x+1, z=_pos.z},
 		{x=_pos.x-1, z=_pos.z},
@@ -63,16 +66,13 @@ teleporters.selected = {}
 
 local hacky_swap_node = function(pos,name)
 	local node = minetest.get_node(pos)
-	local meta = minetest.get_meta(pos)
-	local meta0 = meta:to_table()
 	if node.name == name then
 		return
 	end
 	node.name = name
-	local meta0 = meta:to_table()
+	local meta0 = minetest.get_meta(pos):to_table()
 	minetest.set_node(pos,node)
-	meta = minetest.get_meta(pos)
-	meta:from_table(meta0)
+	minetest.get_meta(pos):from_table(meta0)
 end
 
 -- Nodes and items
