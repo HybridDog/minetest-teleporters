@@ -5,13 +5,9 @@
 teleporters = {}
 
 --Configuration
-local PLAYER_COOLDOWN = 1
+local PLAYER_COOLDOWN = 0.5
 local going_up_effect = true
 -- end config
-
-function teleporters.copy_pos(_pos)
-	return {x=_pos.x, y=_pos.y, z=_pos.z}
-end
 
 function teleporters.is_safe(pos)
 	if minetest.registered_nodes[minetest.get_node(pos).name].walkable
@@ -51,9 +47,9 @@ teleporters.make_formspec = function (meta)
 	return formspec
 end
 
-teleporters.teleport = function (params)
+teleporters.teleport = function(params)
 	params.obj:setpos(params.target)
-	print("[teleporters] "..dump(params.target))
+	--print("[teleporters] "..dump(params.target))
 end
 
 teleporters.reset_cooldown = function (params)
@@ -95,6 +91,12 @@ minetest.register_node("teleporters:unlinked", {
 	end,
 	drop = "teleporters:teleporter",
 })
+
+local set = vector.set_data_to_pos
+local get = vector.get_data_from_pos
+local remove = vector.remove_data_from_pos
+local teleporters_cache = {}
+
 minetest.register_node("teleporters:teleporter", {
 	description = "Teleporter",
 	tiles = {
@@ -128,7 +130,9 @@ minetest.register_node("teleporters:teleporter", {
 				local target_meta = minetest.get_meta(target)
 				target_meta:set_string("target",minetest.pos_to_string(pos))
 				hacky_swap_node(pos, "teleporters:teleporter")
+				set(teleporters_cache, pos.z,pos.y,pos.x, true)
 				hacky_swap_node(target, "teleporters:teleporter")
+				set(teleporters_cache, target.z,target.y,target.x, true)
 				teleporters.selected[name] = nil
 			end
 		else
@@ -139,6 +143,9 @@ minetest.register_node("teleporters:teleporter", {
 				minetest.chat_send_player(playername, '<teleporter> ('..pos.x..' | '..pos.y..' | '..pos.z..')')
 			end
 		end
+	end,
+	on_destruct = function(pos)
+		remove(teleporters_cache, pos.z,pos.y,pos.x)
 	end,
 	on_receive_fields = function(pos, formname, fields, sender)
 		if fields.desc then
@@ -174,14 +181,14 @@ teleporters.use_teleporter = function(obj,pos)
 		meta:set_string("formspec", teleporters.make_formspec(meta))
 	end
 
-	local newpos = teleporters.find_safe(teleporters.copy_pos(target))
+	local newpos = teleporters.find_safe(vector.new(target))
 	if obj:is_player() then
-		minetest.sound_play("teleporters_teleport",{gain=1,to_player=obj:get_player_name()})
+		minetest.sound_play("teleporters_teleport", {to_player=obj:get_player_name()})
 	end
 	newpos.y = newpos.y + .5
 	if going_up_effect then
 		newpos.y = newpos.y-1
-		teleporters.teleport({obj=obj,target=newpos})
+		teleporters.teleport({obj=obj, target=newpos})
 		newpos.y = newpos.y+1
 	end
 	minetest.after(.1, teleporters.teleport, {obj=obj,target=newpos}) -- TODO: particles and change player yaw
@@ -196,8 +203,8 @@ minetest.register_abm({
 	interval = 1,
 	chance = 1,
 	action = function(pos, node)
-		local meta = minetest.get_meta(pos)
 		--[[
+		local meta = minetest.get_meta(pos)
 		if meta:get_string("target") ~= "" then
 			local target = minetest.string_to_pos(meta:get_string("target"))
 			local target_name = minetest.get_node(target).name
@@ -207,21 +214,34 @@ minetest.register_abm({
 				hacky_swap_node(pos,"teleporters:unlinked")
 			end
 		end--]]
+		if not get(teleporters_cache, pos.z,pos.y,pos.x) then
+			set(teleporters_cache, pos.z,pos.y,pos.x, true)
+		end
 		pos.y = pos.y+.5
 		local objs = minetest.get_objects_inside_radius(pos, .5)
 		pos.y = pos.y -.5
-		for _, obj in pairs(objs) do
-			teleporters.use_teleporter(obj,pos)
+		for _,obj in pairs(objs) do
+			teleporters.use_teleporter(obj, pos)
 		end
 	end,
 })
 
 -- globalstep for players
 minetest.register_globalstep(function(dtime)
-	for i, player in pairs(minetest.get_connected_players()) do
-		local pos = vector.round(player:getpos())
-		if minetest.get_node(pos).name == "teleporters:teleporter" then
-			teleporters.use_teleporter(player,pos)
+	for _,player in pairs(minetest.get_connected_players()) do
+		if not teleporters.is_teleporting[player:get_player_name()] then
+			local pos = player:getpos()
+			pos.y = pos.y-0.2
+			pos = vector.round(pos)
+			if get(teleporters_cache, pos.z,pos.y,pos.x) then --print("porting")
+				if minetest.get_node(pos).name == "teleporters:teleporter" then
+					teleporters.use_teleporter(player, pos)
+				else
+					-- is usually done by that on_destruct
+					remove(teleporters_cache, pos.z,pos.y,pos.x)
+					minetest.log("error", "[teleporters] there is no teleporter")
+				end
+			end
 		end
 	end
 end)
