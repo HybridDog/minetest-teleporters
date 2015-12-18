@@ -182,9 +182,8 @@ teleporters.use_teleporter = function(obj,pos)
 	end
 
 	local newpos = teleporters.find_safe(vector.new(target))
-	if obj:is_player() then
-		minetest.sound_play("teleporters_teleport", {to_player=obj:get_player_name()})
-	end
+	minetest.sound_play("teleporters_teleport", {pos=newpos})
+	minetest.sound_play("teleporters_teleport", {pos=pos})
 	newpos.y = newpos.y + .5
 	if going_up_effect then
 		newpos.y = newpos.y-1
