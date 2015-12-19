@@ -161,11 +161,14 @@ minetest.register_node("teleporters:teleporter", {
 teleporters.is_teleporting = {}
 
 teleporters.use_teleporter = function(obj,pos)
-	if obj:is_player() then
-		if teleporters.is_teleporting[obj:get_player_name()] then
+	local pname
+	local is_player = obj:is_player()
+	if is_player then
+		pname = obj:get_player_name()
+		if teleporters.is_teleporting[pname] then
 			return
 		end
-		teleporters.is_teleporting[obj:get_player_name()] = true
+		teleporters.is_teleporting[pname] = true
 	end
 	local meta = minetest.get_meta(pos)
 	local target = pos
@@ -182,17 +185,19 @@ teleporters.use_teleporter = function(obj,pos)
 	end
 
 	local newpos = teleporters.find_safe(vector.new(target))
-	minetest.sound_play("teleporters_teleport", {pos=newpos})
-	minetest.sound_play("teleporters_teleport", {pos=pos})
 	newpos.y = newpos.y + .5
+	minetest.sound_play("teleporters_teleport", {pos=pos})
 	if going_up_effect then
 		newpos.y = newpos.y-1
 		teleporters.teleport({obj=obj, target=newpos})
 		newpos.y = newpos.y+1
+		minetest.after(.1, teleporters.teleport, {obj=obj,target=newpos}) -- TODO: particles and change player yaw
+	else
+		teleporters.teleport({obj=obj, target=newpos})
 	end
-	minetest.after(.1, teleporters.teleport, {obj=obj,target=newpos}) -- TODO: particles and change player yaw
-	if obj:is_player() then
-		minetest.after(PLAYER_COOLDOWN, teleporters.reset_cooldown, {playername=obj:get_player_name()})
+	minetest.sound_play("teleporters_teleport", {pos=newpos})
+	if is_player then
+		minetest.after(PLAYER_COOLDOWN, teleporters.reset_cooldown, {playername=pname})
 	end
 end
 
