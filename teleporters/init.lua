@@ -171,7 +171,7 @@ teleporters.use_teleporter = function(obj,pos)
 		teleporters.is_teleporting[pname] = true
 	end
 	local meta = minetest.get_meta(pos)
-	local target = pos
+	local target
 	if meta:get_string("target") ~= "" then
 		target = minetest.string_to_pos(meta:get_string("target"))
 	elseif meta:get_int("id") > 0 then -- Compatibility with older versions
@@ -182,6 +182,8 @@ teleporters.use_teleporter = function(obj,pos)
 		end
 		meta:set_string("target",minetest.pos_to_string(target)) -- convert to new behavior
 		meta:set_string("formspec", teleporters.make_formspec(meta))
+	else
+		target = vector.new(pos)
 	end
 
 	local newpos = teleporters.find_safe(vector.new(target))
@@ -195,7 +197,9 @@ teleporters.use_teleporter = function(obj,pos)
 	else
 		teleporters.teleport({obj=obj, target=newpos})
 	end
+	newpos.y = newpos.y - .5
 	minetest.sound_play("teleporters_teleport", {pos=newpos})
+	newpos.y = newpos.y + .5
 	if is_player then
 		minetest.after(PLAYER_COOLDOWN, teleporters.reset_cooldown, {playername=pname})
 	end
