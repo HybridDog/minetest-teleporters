@@ -180,6 +180,10 @@ teleporters.use_teleporter = function(obj,pos)
 		else
 			target = teleporters.network[meta:get_int("id")+1]
 		end
+		if not target then
+			minetest.log("error", "[teleporters] missing target")
+			return
+		end
 		meta:set_string("target",minetest.pos_to_string(target)) -- convert to new behavior
 		meta:set_string("formspec", teleporters.make_formspec(meta))
 	else
