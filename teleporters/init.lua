@@ -8,11 +8,11 @@ teleporters = {}
 local PLAYER_COOLDOWN = 0.5
 local going_up_effect = true
 -- end config
-local efectsound=""
+local efectsound
 if minetest.get_modpath("mcl_sounds") then
-efectsound=mcl_sounds.node_sound_stone_defaults()
+	efectsound = mcl_sounds.node_sound_stone_defaults()
 else
-efectsound=default.node_sound_stone_defaults()
+	efectsound = default.node_sound_stone_defaults()
 end
 
 function teleporters.is_safe(pos)
