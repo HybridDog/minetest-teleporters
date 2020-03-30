@@ -8,6 +8,12 @@ teleporters = {}
 local PLAYER_COOLDOWN = 0.5
 local going_up_effect = true
 -- end config
+local efectsound
+if minetest.get_modpath("mcl_sounds") then
+	efectsound = mcl_sounds.node_sound_stone_defaults()
+else
+	efectsound = default.node_sound_stone_defaults()
+end
 
 function teleporters.is_safe(pos)
 	if minetest.registered_nodes[minetest.get_node(pos).name].walkable
@@ -38,7 +44,7 @@ function teleporters.find_safe(_pos)
 	return _pos
 end
 
-dofile(minetest.get_modpath("teleporters").."/legacy.lua")
+dofile(minetest.get_modpath(minetest.get_current_modname()).."/legacy.lua")
 
 teleporters.make_formspec = function (meta)
 	formspec = "size[6,3]" ..
@@ -81,7 +87,7 @@ minetest.register_node("teleporters:unlinked", {
 		"teleporters_side.png",
 	},
 	groups = {cracky=1,not_in_creative_inventory=1},
-	sounds = default.node_sound_stone_defaults(),
+	sounds = efectsound,
 	on_receive_fields = function(pos, formname, fields, sender)
 		if fields.desc then
 			local meta = minetest.get_meta(pos)
@@ -106,7 +112,7 @@ minetest.register_node("teleporters:teleporter", {
 		"teleporters_side.png",
 	},
 	groups = {cracky=1},
-	sounds = default.node_sound_stone_defaults(),
+	sounds = efectsound,
 	light_source = 10,
 	after_place_node = function(pos, placer, itemstack)
 		local meta = minetest.get_meta(pos)
@@ -259,13 +265,22 @@ minetest.register_globalstep(function(dtime)
 end)
 
 -- Crafting
-
-minetest.register_craft({
-	output = "teleporters:teleporter",
-	recipe = {
-		{"default:mese_crystal", "default:coal_lump", "default:mese_crystal"},
-		{"default:steel_ingot", "default:obsidian", "default:steel_ingot"},
-		{"default:diamond", "default:diamond", "default:diamond"}
-	},
-})
-
+if minetest.get_modpath("mcl_core") then
+	minetest.register_craft({
+		output = "teleporters:teleporter",
+		recipe = {
+			{"mcl_core:glass", "mcl_core:coal_lump", "mcl_core:glass"},
+			{"mcl_core:iron_ingot", "mcl_core:obsidian", "mcl_core:iron_ingot"},
+			{"mcl_core:diamond", "mcl_core:diamond", "mcl_core:diamond"}
+		},
+	})
+else
+	minetest.register_craft({
+		output = "teleporters:teleporter",
+		recipe = {
+			{"default:mese_crystal", "default:coal_lump", "default:mese_crystal"},
+			{"default:steel_ingot", "default:obsidian", "default:steel_ingot"},
+			{"default:diamond", "default:diamond", "default:diamond"}
+		},
+	})
+end
