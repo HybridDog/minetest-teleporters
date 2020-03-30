@@ -15,15 +15,17 @@ elseif minetest.global_exists("default") then
 	efectsound = default.node_sound_stone_defaults()
 end
 
+local function is_walkable_at(pos)
+	local def = minetest.registered_nodes[minetest.get_node(pos).name]
+	return def and def.walkable
+end
+
 function teleporters.is_safe(pos)
-	if minetest.registered_nodes[minetest.get_node(pos).name].walkable
-	and not (
-		minetest.registered_nodes[minetest.get_node({x=pos.x, y=pos.y+1, z=pos.z}).name].walkable
-		or minetest.registered_nodes[minetest.get_node({x=pos.x, y=pos.y+2, z=pos.z}).name].walkable
-	) then
-		return true
-	end
-	return false
+	return is_walkable_at(pos)
+		and not (
+			is_walkable_at({x=pos.x, y=pos.y+1, z=pos.z})
+			or is_walkable_at({x=pos.x, y=pos.y+2, z=pos.z})
+		)
 end
 
 function teleporters.find_safe(_pos)
@@ -98,10 +100,8 @@ minetest.register_node("teleporters:unlinked", {
 	drop = "teleporters:teleporter",
 })
 
-local set = vector.set_data_to_pos
-local get = vector.get_data_from_pos
-local remove = vector.remove_data_from_pos
-local teleporters_cache = {}
+local poshash = minetest.hash_node_position
+local known_teleporters = {}
 
 minetest.register_node("teleporters:teleporter", {
 	description = "Teleporter",
@@ -136,9 +136,9 @@ minetest.register_node("teleporters:teleporter", {
 				local target_meta = minetest.get_meta(target)
 				target_meta:set_string("target",minetest.pos_to_string(pos))
 				hacky_swap_node(pos, "teleporters:teleporter")
-				set(teleporters_cache, pos.z,pos.y,pos.x, true)
+				known_teleporters[poshash(pos)] = true
 				hacky_swap_node(target, "teleporters:teleporter")
-				set(teleporters_cache, target.z,target.y,target.x, true)
+				known_teleporters[poshash(target)] = true
 				teleporters.selected[name] = nil
 			end
 		else
@@ -151,7 +151,7 @@ minetest.register_node("teleporters:teleporter", {
 		end
 	end,
 	on_destruct = function(pos)
-		remove(teleporters_cache, pos.z,pos.y,pos.x)
+		known_teleporters[poshash(pos)] = nil
 	end,
 	on_receive_fields = function(pos, formname, fields, sender)
 		if fields.desc then
@@ -232,9 +232,8 @@ minetest.register_abm({
 				hacky_swap_node(pos,"teleporters:unlinked")
 			end
 		end--]]
-		if not get(teleporters_cache, pos.z,pos.y,pos.x) then
-			set(teleporters_cache, pos.z,pos.y,pos.x, true)
-		end
+		-- It may already be known.
+		known_teleporters[poshash(pos)] = true
 		pos.y = pos.y+.5
 		local objs = minetest.get_objects_inside_radius(pos, .5)
 		pos.y = pos.y -.5
@@ -251,13 +250,15 @@ minetest.register_globalstep(function(dtime)
 			local pos = player:getpos()
 			pos.y = pos.y-0.2
 			pos = vector.round(pos)
-			if get(teleporters_cache, pos.z,pos.y,pos.x) then --print("porting")
+			local vi = poshash(pos)
+			if known_teleporters[vi] then
 				if minetest.get_node(pos).name == "teleporters:teleporter" then
 					teleporters.use_teleporter(player, pos)
 				else
-					-- is usually done by that on_destruct
-					remove(teleporters_cache, pos.z,pos.y,pos.x)
-					minetest.log("error", "[teleporters] there is no teleporter")
+					-- This is usually done in the teleporter's on_destruct
+					known_teleporters[vi] = nil
+					minetest.log("action", "[teleporters] No teleporter " ..
+						"found at " .. minetest.pos_to_string(pos))
 				end
 			end
 		end
