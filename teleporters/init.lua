@@ -266,21 +266,21 @@ end)
 
 -- Crafting
 if minetest.get_modpath("mcl_core") then
-    minetest.register_craft({
-        output = "teleporters:teleporter",
-        recipe = {
-            {"mcl_core:glass", "mcl_core:coal_lump", "mcl_core:glass"},
-            {"mcl_core:iron_ingot", "mcl_core:obsidian", "mcl_core:iron_ingot"},
-            {"mcl_core:diamond", "mcl_core:diamond", "mcl_core:diamond"}
-        },
-    })
+	minetest.register_craft({
+		output = "teleporters:teleporter",
+		recipe = {
+			{"mcl_core:glass", "mcl_core:coal_lump", "mcl_core:glass"},
+			{"mcl_core:iron_ingot", "mcl_core:obsidian", "mcl_core:iron_ingot"},
+			{"mcl_core:diamond", "mcl_core:diamond", "mcl_core:diamond"}
+		},
+	})
 else
-    minetest.register_craft({
-        output = "teleporters:teleporter",
-        recipe = {
-            {"default:mese_crystal", "default:coal_lump", "default:mese_crystal"},
-            {"default:steel_ingot", "default:obsidian", "default:steel_ingot"},
-            {"default:diamond", "default:diamond", "default:diamond"}
-        },
-    })
+	minetest.register_craft({
+		output = "teleporters:teleporter",
+		recipe = {
+			{"default:mese_crystal", "default:coal_lump", "default:mese_crystal"},
+			{"default:steel_ingot", "default:obsidian", "default:steel_ingot"},
+			{"default:diamond", "default:diamond", "default:diamond"}
+		},
+	})
 end
