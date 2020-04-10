@@ -1,0 +1,4 @@
+name = teleporters
+description = In-game painting mod for minetest
+depends = vector_extras
+optional_depends = default, mcl_core, mcl_sounds
