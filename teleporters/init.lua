@@ -56,7 +56,7 @@ teleporters.make_formspec = function (meta)
 end
 
 teleporters.teleport = function(params)
-	params.obj:setpos(params.target)
+	params.obj:set_pos(params.target)
 	--print("[teleporters] "..dump(params.target))
 end
 
@@ -247,7 +247,7 @@ minetest.register_abm({
 minetest.register_globalstep(function(dtime)
 	for _,player in pairs(minetest.get_connected_players()) do
 		if not teleporters.is_teleporting[player:get_player_name()] then
-			local pos = player:getpos()
+			local pos = player:get_pos()
 			pos.y = pos.y-0.2
 			pos = vector.round(pos)
 			local vi = poshash(pos)
